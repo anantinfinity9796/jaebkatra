@@ -1,4 +1,4 @@
-from db_queries import return_db_queries
+from db_init_queries import return_db_queries
 from database.database import Database
 
 def main():

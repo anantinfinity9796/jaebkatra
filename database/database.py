@@ -1,31 +1,95 @@
 #database.py
 
 import os
+import sys
 import psycopg
+import logging
+from psycopg.rows import dict_row
 
+app_logger = logging.getLogger("app")
 
-class Database:
-
+class Database():
     def __init__(self):
         try:
-            # self.connection = psycopg.connect(dbname=os.getenv('POSTGRES_DB'),
-            #                               user=os.getenv('POSTGRES_USER'),
-            #                               password=os.getenv('POSTGRES_PASSWORD'),
-            #                               port=os.getenv('POSTGRES_PORT'),
-            #                               host=os.getenv('POSTGRES_HOST'))
-            print(os.getenv("POSTGRES_URI"))
-            self.postgres_connection = psycopg.connect(os.getenv("POSTGRES_URI"))
+            app_logger.info("Initializing the POSTGRES database connection")
+            self.postgres_connection = psycopg.connect(os.getenv("POSTGRES_URI"), row_factory=dict_row)
         except Exception as e:
-            print(e)
-            self.postgres_connection = None
+            app_logger.error("Failed to initialize database connection")
+            sys.exit(1)
     
-    def execute_query(self, query):
+    def execute_transaction(self, query_list, values):
         try:
-            with self.postgres_connection.cursor() as cur:
-                print(cur.execute(query))
+            cur = self.postgres_connection.cursor()
+            with self.postgres_connection.transaction():
+                for query in query_list:
+                    cur.execute(query, values)
             self.postgres_connection.commit()
         except Exception as e:
-            print(e)
-        return 
+            app_logger.error("failed to execute transaction rolling back", exc_info=e)
+            self.postgres_connection.rollback()
+        finally:
+            cur.close()
+
+    def execute_query(self, query):
+        try:
+            cur = self.postgres_connection.cursor()
+            cur.execute(query)
+            self.postgres_connection.commit()
+            app_logger.info("query executed successfully")
+        except Exception as e:
+            app_logger.error(f"Failed to execute query: {query}")
+        finally:
+            cur.close()
+
+    def insert_one(self, query, values=None):
+        try:
+            cur = self.postgres_connection.cursor()
+            cur.execute(query, values)
+            self.postgres_connection.commit()
+            app_logger.info("query executed successfully")
+        except Exception as e:
+            app_logger.error(f"Failed to execute query: {query}", exc_info=e)
+        finally:
+            cur.close()
+    
+    def fetch_one(self, query, values=None):
+        try:
+            cur = self.postgres_connection.cursor()
+            cur.execute(query, values)
+            self.postgres_connection.commit()
+            app_logger.info("query executed successfully")
+            return cur.fetchone()
+        except Exception as e:
+            app_logger.error(f"fetch_one failed for query: {query}", exc_info=e)
+            return False
+        finally:
+            cur.close()
+    
+    def fetch_all(self, query, values=None):
+        try:
+            cur = self.postgres_connection.cursor()
+            cur.execute(query, values)
+            self.postgres_connection.commit()
+            app_logger.info("query executed successfully")
+            return cur.fetchall()
+        except Exception as e:
+            app_logger.error(f"fetch_one failed for query: {query}", exc_info=e)
+            return False
+        finally:
+            cur.close()
+
+    def delete_one(self, query, values=None):
+        try:
+            cur = self.postgres_connection.cursor()
+            cur.execute(query, values)
+            self.postgres_connection.commit()
+            app_logger.info("delete query executed successfully")
+        except Exception as e:
+            app_logger.error(f"Failed to execute delete query: {query}")
+        finally:
+            cur.close()
+        return
+                
+        
 
         
