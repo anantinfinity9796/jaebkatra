@@ -12,9 +12,9 @@ from dataclasses import dataclass
 # @dataclass
 class User(BaseModel):
 
-    user_id : UUID = Field(default_factory=lambda: uuid.uuid4().hex)
+    user_id : UUID = Field(default_factory=uuid.uuid4)
     name: str
-    created_ts: datetime = Field(default_factory=lambda: datetime.now())
+    created_ts: datetime = Field(default_factory=datetime.now)
     phone: str = None
     wallets: list[UUID] = []
     family_members: list[UUID] = []
