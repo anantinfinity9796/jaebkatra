@@ -1,14 +1,13 @@
-
+# budgets.py
 
 
 import logging
 from uuid import UUID
-from fastapi import APIRouter, status
+from typing import Annotated
+from fastapi import APIRouter, status, Depends
 
-from ..database.database import Database
+from ..database.database import Database, get_database_connection
 from ..models.budget import Budget
-
-database_conn = Database()
 
 router = APIRouter(
     prefix="/budgets",
@@ -22,33 +21,32 @@ app_logger = logging.getLogger("app")
 
 
 @router.get("/", status_code=status.HTTP_200_OK)
-def list_budgets() -> list:
+def list_budgets(db_conn: Annotated[Database, Depends(get_database_connection)]) -> list:
     try:
         app_logger.info(f"listing all budgets")
-        list_budgets_query = f""" SELECT * FROM budgets ; """
-        budgets_list_data = database_conn.fetch_all(query=list_budgets_query)
+        list_budgets_query = """ SELECT * FROM budgets ; """
+        budgets_list_data = db_conn.fetch_all(query=list_budgets_query)
         return budgets_list_data
     except Exception as e:
         app_logger.error("failed to get budgets list", exc_info=e)
 
 
 @router.get("/{budget_id}", status_code=status.HTTP_200_OK)
-def get_budget_details(budget_id:UUID) -> dict:
+def get_budget_details(budget_id:UUID, db_conn: Annotated[Database, Depends(get_database_connection)]) -> dict:
     try:
         app_logger.info(f"get budget details for budget_id: {budget_id}")
         get_budget_query = f""" SELECT * FROM budgets WHERE budget_id = %s;"""
-        budget_data = database_conn.fetch_one(query=get_budget_query, values=[budget_id.hex])
+        budget_data = db_conn.fetch_one(query=get_budget_query, values=[budget_id.hex])
         return budget_data
     except Exception as e:
         app_logger.error(f"failed to get budget details for budget_id: {budget_id}", exc_info=e)
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
-def create_budget(budget:Budget):
+def create_budget(budget:Budget, db_conn: Annotated[Database, Depends(get_database_connection)]):
     try:
         app_logger.info(f"creating a new budget for user_id: {budget.user_id}")
         budget_model_dump = budget.model_dump()
-        app_logger.info(budget_model_dump)
         create_budget_query = f"""INSERT INTO budgets (budget_id, user_id, wallet_id, created_ts, start_date,
                                                             end_date, budget_amount)
                                     VALUES (%(budget_id)s, %(user_id)s, %(wallet_id)s, %(created_ts)s,
@@ -58,7 +56,7 @@ def create_budget(budget:Budget):
             SET allocated_balance = %(budget_amount)s
             WHERE wallet_id = %(wallet_id)s;
 """
-        database_conn.execute_transaction([create_budget_query, update_wallet_query], budget_model_dump)
+        db_conn.execute_transaction([create_budget_query, update_wallet_query], budget_model_dump)
     except Exception as e:
         app_logger.error(f"failed to create budget for user_id: {budget.user_id}", exc_info=e)
 
@@ -66,10 +64,10 @@ def create_budget(budget:Budget):
 # def modify_user(payload:dict)
 
 @router.delete("/{budget_id}", status_code=status.HTTP_200_OK)
-def delete_budget(budget_id:UUID):
+def delete_budget(budget_id:UUID, db_conn: Annotated[Database, Depends(get_database_connection)]):
     try:
         app_logger.info(f"Deleting budget with budget_id: {budget_id}")
         delete_budget_query = """DELETE FROM budgets where budget_id = %s;"""
-        database_conn.delete_one(query=delete_budget_query, values=[budget_id.hex])
+        db_conn.delete_one(query=delete_budget_query, values=[budget_id.hex])
     except Exception as e:
         app_logger.error(f"failed to delete budget: {budget_id}", exc_info=e)

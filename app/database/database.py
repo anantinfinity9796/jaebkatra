@@ -16,7 +16,14 @@ class Database():
         except Exception as e:
             app_logger.error("Failed to initialize database connection")
             sys.exit(1)
-    
+
+    def __enter__(self):
+        pass
+    def __exit__(self):
+        pass
+    def close(self):
+        self.postgres_connection.close()
+        return
     def execute_transaction(self, query_list, values):
         try:
             cur = self.postgres_connection.cursor()
@@ -89,7 +96,16 @@ class Database():
         finally:
             cur.close()
         return
-                
         
 
-        
+def get_database_connection():
+    conn_object = Database()
+    try:
+        app_logger.info("Connection initialized")
+        yield conn_object
+    except Exception as e:
+        app_logger.error("Failed to initialize database connection in dependencies", exc_info=e)
+        raise
+    finally:
+        conn_object.close()
+        app_logger.info("connection closed")
