@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 
 
 
-class ApiOperations(ABC):
+class Repository(ABC):
 
     @abstractmethod
     def get_all(self,):

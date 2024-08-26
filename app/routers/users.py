@@ -6,61 +6,57 @@ from typing import Annotated, Any
 from fastapi import APIRouter, status, Depends
 from ..database.database import Database, get_database_connection
 from ..models.user import User
-
+from ..repositories.user_api_operations import UserApiOperations
 app_logger = logging.getLogger("app")
 
 
 router = APIRouter(
     prefix="/users",
     tags=["users"],
-    
 )
 
+# declare dependencies before hand for a cleaner code
+UserApiOperation = Annotated[UserApiOperations, Depends(UserApiOperations)]
+DbConn =  Annotated[Database, Depends(get_database_connection)]
 
+                     
 @router.get("/", status_code=status.HTTP_200_OK)
-def list_users(db_conn: Annotated[Database, Depends(get_database_connection)]) -> list:
+def list_users(api_operation: UserApiOperation, db_conn: DbConn) -> list:
     try:
-        app_logger.info(f"listing all users")
-        list_users_query = """ SELECT * FROM users ;"""
-        users_list_data = db_conn.fetch_all(query=list_users_query)
-        return users_list_data
+        query, values = api_operation.get_all()
+        users_list = db_conn.fetch_all(query=query, values=values)
+        return users_list
     except Exception as e:
         app_logger.error("failed to get user list", exc_info=e)
 
 
 @router.get("/{user_id}", status_code=status.HTTP_200_OK)
-def get_user_details(user_id:UUID, db_conn: Annotated[Database, Depends(get_database_connection)]) -> dict:
+def get_user_details(user_id:UUID, api_operation: UserApiOperation, db_conn: DbConn) -> dict:
     try:
-        app_logger.info(f"get user details for user_id: {user_id}")
-        get_user_query = f""" SELECT * FROM users WHERE user_id = %s;"""
-        user_data = db_conn.fetch_one(query=get_user_query, values=[user_id.hex])
+        query, values = api_operation.get_one(user_id)
+        user_data = db_conn.fetch_one(query=query, values=values)
         return user_data
     except Exception as e:
         app_logger.error(f"failed to fetch user details for user_id: {user_id}", exc_info=e)
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
-def create_user(user: User, db_conn: Annotated[Database, Depends(get_database_connection)]):
+def create_user(user: User, api_operation: UserApiOperation, db_conn: DbConn):
     try:
-        app_logger.info(f"creating new user with name: {user.name}")        
-        user_model_dump = user.model_dump()
-
-        create_user_query = f"""INSERT INTO users (user_id, name, created_ts, phone, wallets, family_members) 
-                                    VALUES (%(user_id)s, %(name)s, %(created_ts)s, %(phone)s, %(wallets)s, %(family_members)s);"""
-        
-        db_conn.insert_one(create_user_query, user_model_dump)
+        query, values = api_operation.create(user=user)
+        db_conn.execute_query(query=query, values=values)
     except Exception as e:
         app_logger.error(f"failed to create user: {user.name}", exc_info=e)
+    return
 
 # @router.patch("/users/update")
 # def modify_user(payload:dict)
 
 @router.delete("/{user_id}", status_code=status.HTTP_200_OK)
-def delete_user(user_id:UUID, db_conn: Annotated[Database, Depends(get_database_connection)]):
+def delete_user(user_id:UUID, api_operation: UserApiOperation, db_conn: DbConn):
     try:
-        app_logger.info(f"Deleting user with user_id: {user_id}")
-        delete_user_query = """DELETE FROM users WHERE user_id = %s"""
-        db_conn.delete_one(query=delete_user_query, values=[user_id.hex])
+        query, values = api_operation.delete(user_id)
+        db_conn.execute_query(query=query, values=values)
     except Exception as e:
         app_logger.error(f"failed to delete user: {user_id}", exc_info=e)
     return 

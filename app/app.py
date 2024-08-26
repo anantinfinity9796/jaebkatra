@@ -10,12 +10,22 @@ from .routers import (users,
                       transactions)
 
 from util.util import initialize_logger
+from .database.database import Database
 
 # initialize the logger
 initialize_logger()
+
+# initialize a database connection pool for the whole lifespan
+# def init_database_conn(app: FastAPI):
+#     db_conn = Database()
+#     db_conn.pool_open()
+#     yield
+#     db_conn.pool_close()
+
 app_logger = logging.getLogger("app")
 
 # initialize the app
+# app = FastAPI(lifespan=init_database_conn)
 app = FastAPI()
 
 # origins = [

@@ -9,10 +9,10 @@ from pydantic import BaseModel, Field
 @dataclass
 class Wallet(BaseModel):
 
-    wallet_id: UUID = Field(default_factory=lambda: uuid.uuid4().hex)
+    wallet_id: UUID = Field(default_factory=uuid.uuid4)
     user_id: UUID
     name: str
-    created_ts: datetime  = Field(default_factory=lambda: datetime.now())
+    created_ts: datetime  = Field(default_factory=datetime.now)
     allocated_balance: float
     consumed_balance: float = 0.00
     wallet_type: str

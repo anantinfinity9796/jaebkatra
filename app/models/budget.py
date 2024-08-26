@@ -6,13 +6,12 @@ from dataclasses import dataclass
 from datetime import datetime, date, timedelta
 from pydantic import BaseModel, Field
 
-@dataclass
-class Budget(BaseModel):
 
-    budget_id: UUID = Field(default_factory=lambda: uuid.uuid4().hex)
+class Budget(BaseModel):
+    budget_id: UUID = Field(default_factory=uuid.uuid4)
     user_id: UUID
     wallet_id: UUID
-    created_ts: datetime = Field(default_factory=lambda:  datetime.now())
-    start_date: date = Field(default_factory=lambda : datetime.now().date())
+    created_ts: datetime = Field(default_factory=datetime.now)
+    start_date: date = Field(default_factory=datetime.now().date)
     end_date: date
     budget_amount: float

@@ -3,50 +3,65 @@
 import os
 import sys
 import psycopg
+from psycopg_pool import ConnectionPool
 import logging
 from psycopg.rows import dict_row
 
 app_logger = logging.getLogger("app")
 
 class Database():
-    def __init__(self):
+    def __init__(self, pool=False):
         try:
             app_logger.info("Initializing the POSTGRES database connection")
-            self.postgres_connection = psycopg.connect(os.getenv("POSTGRES_URI"), row_factory=dict_row)
+            if pool:
+                self.postgres_connection = ConnectionPool(os.getenv("POSTGRES_URI"),
+                                                            row_factory=dict_row,
+                                                            min_size=2,
+                                                            max_size=3)
+            else:
+                self.postgres_connection = psycopg.connect(os.getenv("POSTGRES_URI"), row_factory=dict_row)
         except Exception as e:
-            app_logger.error("Failed to initialize database connection")
+            app_logger.error("Failed to initialize database connection pool")
             sys.exit(1)
 
     def __enter__(self):
         pass
+
     def __exit__(self):
         pass
-    def close(self):
+
+    def pool_open(self):
+        self.postgres_connection.open()
+        return
+    
+    def pool_close(self):
         self.postgres_connection.close()
         return
-    def execute_transaction(self, query_list, values):
+    
+    def execute_transaction(self, query_value_list):
         try:
-            cur = self.postgres_connection.cursor()
-            with self.postgres_connection.transaction():
-                for query in query_list:
-                    cur.execute(query, values)
-            self.postgres_connection.commit()
+            with self.postgres_connection.connection as conn:
+                # cur = conn.cursor()
+                with conn.cursor() as cur:
+                    with self.postgres_connection.transaction():
+                        for query, values in query_value_list:
+                            cur.execute(query, values)
+                
+            # self.postgres_connection.commit()
         except Exception as e:
             app_logger.error("failed to execute transaction rolling back", exc_info=e)
-            self.postgres_connection.rollback()
-        finally:
-            cur.close()
+            # self.postgres_connection.rollback()
+        # finally:
+        #     cur.close()
 
-    def execute_query(self, query):
+    def execute_query(self, query, values):
         try:
-            cur = self.postgres_connection.cursor()
-            cur.execute(query)
-            self.postgres_connection.commit()
-            app_logger.info("query executed successfully")
+            with self.postgres_connection.connection as conn:
+                with conn.cursor() as cur:
+                    cur.execute(query, values)
+                app_logger.info("query executed successfully")
         except Exception as e:
-            app_logger.error(f"Failed to execute query: {query}")
-        finally:
-            cur.close()
+            app_logger.error(f"Failed to execute query: {query}", exc_info=e)
 
     def insert_one(self, query, values=None):
         try:
@@ -61,29 +76,25 @@ class Database():
     
     def fetch_one(self, query, values=None):
         try:
-            cur = self.postgres_connection.cursor()
-            cur.execute(query, values)
-            self.postgres_connection.commit()
-            app_logger.info("query executed successfully")
-            return cur.fetchone()
+            with self.postgres_connection.connection as conn:
+                with conn.cursor() as cur:
+                    cur.execute(query, values)
+                    app_logger.info("query executed successfully")
+                    data = cur.fetchone()
+            return data
         except Exception as e:
-            app_logger.error(f"fetch_one failed for query: {query}", exc_info=e)
-            return False
-        finally:
-            cur.close()
+            app_logger.error(f"Failed to execute query: {query}", exc_info=e)
     
     def fetch_all(self, query, values=None):
         try:
-            cur = self.postgres_connection.cursor()
-            cur.execute(query, values)
-            self.postgres_connection.commit()
-            app_logger.info("query executed successfully")
-            return cur.fetchall()
+            with self.postgres_connection.connection as conn:
+                with conn.cursor() as cur:
+                    cur.execute(query, values)
+                    app_logger.info("query executed successfully")
+                    data = cur.fetchall()
+            return data
         except Exception as e:
-            app_logger.error(f"fetch_one failed for query: {query}", exc_info=e)
-            return False
-        finally:
-            cur.close()
+            app_logger.error(f"Failed to execute query: {query}", exc_info=e)
 
     def delete_one(self, query, values=None):
         try:
@@ -100,12 +111,13 @@ class Database():
 
 def get_database_connection():
     conn_object = Database()
+    app_logger.info(f"{type(conn_object)}")
     try:
         app_logger.info("Connection initialized")
         yield conn_object
     except Exception as e:
         app_logger.error("Failed to initialize database connection in dependencies", exc_info=e)
         raise
-    finally:
-        conn_object.close()
-        app_logger.info("connection closed")
+    # finally:
+    #     conn_object.close()
+    #     app_logger.info("connection closed")
