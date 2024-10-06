@@ -12,6 +12,9 @@ app_logger = logging.getLogger("app")
 
 class BudgetRepository(Repository):
 
+    def __init__(self):
+        return
+
     def get_all(self, db_conn:Database) -> list:
         app_logger.info(f"listing all budgets")
         list_budgets_query = """SELECT * FROM budgets;"""

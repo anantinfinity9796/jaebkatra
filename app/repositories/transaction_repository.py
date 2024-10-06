@@ -12,6 +12,9 @@ app_logger = logging.getLogger("app")
 
 class TransactionRepository(Repository):
 
+    def __init__(self):
+        return
+    
     def get_all(self, db_conn:Database) -> list:
         app_logger.info(f"listing all transactions")
         list_transactions_query = f""" SELECT * FROM transactions;"""

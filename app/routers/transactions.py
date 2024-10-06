@@ -1,4 +1,4 @@
-
+# transactions.py
 
 
 import logging
@@ -6,8 +6,9 @@ from uuid import UUID
 from typing import Annotated
 from fastapi import APIRouter, status, Depends
 
-from ..database.database import Database, get_database_connection
 from ..models.transaction import Transaction
+from ..services.transaction_service import TransactionService
+from ..database.database import Database, get_database_connection
 
 router = APIRouter(
     prefix="/transactions",
@@ -19,48 +20,31 @@ router = APIRouter(
 
 app_logger = logging.getLogger("app")
 
-
+TransactionsService = Annotated[TransactionService, Depends(TransactionService)]
+DbConn = Annotated[Database, Depends(get_database_connection)]
 
 @router.get("/", status_code=status.HTTP_200_OK)
-def list_transactions(db_conn: Annotated[Database, Depends(get_database_connection)]) -> list:
+def list_transactions(db_conn:DbConn, transaction_service: TransactionsService) -> list:
     try:
-        app_logger.info(f"listing all transactions")
-        list_transactions_query = f""" SELECT * FROM transactions ;"""
-        transactions_list_data = db_conn.fetch_all(query=list_transactions_query)
-        return transactions_list_data
+        transactions_list = transaction_service.list_transactions(db_conn)
+        return transactions_list
     except Exception as e:
         app_logger.error("failed to get transactions list", exc_info=e)
 
 
 @router.get("/{transaction_id}", status_code=status.HTTP_200_OK)
-def get_transaction_details(transaction_id:UUID, db_conn: Annotated[Database, Depends(get_database_connection)]) -> dict:
+def get_transaction_details(transaction_id:UUID, db_conn:DbConn, transaction_service: TransactionsService) -> dict:
     try:
-        app_logger.info(f"get transaction details for transaction_id: {transaction_id}")
-        get_transaction_query = f""" SELECT * FROM transactions WHERE transaction_id = %s;"""
-        transaction_data = db_conn.fetch_one(query=get_transaction_query, values=[transaction_id.hex])
+        transaction_data = transaction_service.get_transaction(db_conn, transaction_id)
         return transaction_data
     except Exception as e:
         app_logger.error(f"failed to get transaction details for transaction_id: {transaction_id}", exc_info=e)
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
-def create_transaction(transaction:Transaction, db_conn: Annotated[Database, Depends(get_database_connection)]):
+def create_transaction(transaction:Transaction, db_conn:DbConn, transaction_service: TransactionsService):
     try:
-        app_logger.info(f"creating a new transaction for user_id: {transaction.user_id}")
-        transaction_model_dump = transaction.model_dump()
-        app_logger.info(transaction_model_dump)         
-        insert_transaction_table_query = """
-            INSERT INTO transactions (transaction_id, user_id, wallet_id, transaction_amount,
-                                            transaction_category, transaction_ts, wallet_type)
-                VALUES (%(transaction_id)s, %(user_id)s, %(wallet_id)s, %(transaction_amount)s,
-                            %(transaction_category)s, %(transaction_ts)s, %(wallet_type)s);
-"""
-        update_wallets_query = """
-            UPDATE wallets
-            SET consumed_balance = consumed_balance + %(transaction_amount)s
-            WHERE wallet_id = %(wallet_id)s;
-"""
-        db_conn.execute_transaction([insert_transaction_table_query, update_wallets_query], transaction_model_dump)
+        transaction_service.create_transaction(db_conn, transaction)
     except Exception as e:
         app_logger.error(f"failed to create transaction for user_id: {transaction.user_id}", exc_info=e)
 
