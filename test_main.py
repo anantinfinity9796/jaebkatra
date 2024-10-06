@@ -3,13 +3,12 @@ print(sys.path)
 
 
 
-from models.user import User
-from models.budget import Budget
-from models.transaction import Transaction
-from models.wallet import Wallet
+from app.repositories.wallet_repository import WalletRepository
 
-# def main():
-#     print("inside_amin")
+def main():
+    wallet_object = WalletRepository()
+    print(f"The wallet object is: {wallet_object}")
+    print("inside_main")
     
-# if __name__=="__main__":
-#     main()
+if __name__=="__main__":
+    main()

@@ -21,7 +21,7 @@ class Database():
             else:
                 self.postgres_connection = psycopg.connect(os.getenv("POSTGRES_URI"), row_factory=dict_row)
         except Exception as e:
-            app_logger.error("Failed to initialize database connection pool")
+            app_logger.error("Failed to initialize database connection pool", exc_info=e)
             sys.exit(1)
 
     def __enter__(self):
@@ -38,6 +38,18 @@ class Database():
         self.postgres_connection.close()
         return
     
+    def commit(self):
+        try:
+            self.postgres_connection.commit()
+        except Exception as e:
+            app_logger.error("failed to commit the operation to the database", exc_info=e)
+
+    def rollback(self,):
+        try:
+            self.postgres_connection.rollback()
+        except Exception as e:
+            app_logger.error("failed to rollback the operation to the database", exc_info=e)
+
     def execute_transaction(self, query_value_list):
         try:
             with self.postgres_connection.connection as conn:
@@ -54,7 +66,7 @@ class Database():
         # finally:
         #     cur.close()
 
-    def execute_query(self, query, values):
+    def execute_query(self, query, values=None):
         try:
             with self.postgres_connection.connection as conn:
                 with conn.cursor() as cur:

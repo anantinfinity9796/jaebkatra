@@ -8,7 +8,8 @@ from fastapi import APIRouter, status, Depends
 
 from ..database.database import Database, get_database_connection
 from ..models.budget import Budget
-from ..repositories.budget_api_operations import BudgetApiOperations
+from ..repositories.budget_repository import BudgetRepository
+from ..repositories.wallet_repository import WalletRepository
 
 router = APIRouter(
     prefix="/budgets",
@@ -18,7 +19,8 @@ router = APIRouter(
 
 app_logger = logging.getLogger("app")
 
-BudgetApiOperation = Annotated[BudgetApiOperations, Depends(BudgetApiOperations)]
+BudgetApiOperation = Annotated[BudgetRepository, Depends(BudgetRepository)]
+WalletApiOperation = Annotated[WalletRepository, Depends(WalletRepository)]
 DbConn = Annotated[Database, Depends(get_database_connection)]
 
 

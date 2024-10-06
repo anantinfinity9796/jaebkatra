@@ -12,15 +12,18 @@ app_logger = logging.getLogger("app")
 
 class UserRepository(Repository):
 
+    def __init__(self):
+        return
+
     def get_all(self, db_conn:Database) -> list:
         list_users_query = """SELECT * FROM users;"""
-        user_list = db_conn.execute_query(list_users_query)
+        user_list = db_conn.fetch_all(list_users_query)
         return user_list
 
     def get_one(self, db_conn:Database, user_id:UUID) -> dict:
         app_logger.info(f"get user details for user_id: {user_id}")
-        get_user_query = f""" SELECT * FROM users WHERE user_id = %s;"""
-        user_data = db_conn.execute_query(query=get_user_query, values={"user_id":user_id.hex})
+        get_user_query = f""" SELECT * FROM users WHERE user_id = %(user_id)s;"""
+        user_data = db_conn.fetch_one(query=get_user_query, values={'user_id':user_id.hex})
         return user_data
 
     def create(self, db_conn:Database, user: User):

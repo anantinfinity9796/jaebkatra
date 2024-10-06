@@ -11,16 +11,19 @@ app_logger = logging.getLogger("app")
 
 class WalletRepository(Repository):
 
+    def __init__(self):
+        return
+
     def get_all(self, db_conn:Database) -> list:
-        app_logger.info(f"listing all wallets")
-        list_wallets_query = f""" SELECT * FROM wallets ;"""
-        user_list = db_conn.execute_query(list_wallets_query)
+        app_logger.info("listing all wallets")
+        list_wallets_query = """ SELECT * FROM wallets;"""
+        user_list = db_conn.fetch_all(list_wallets_query)
         return user_list
     
     def get_one(self, db_conn:Database, wallet_id: UUID) -> dict:
         app_logger.info(f"get wallet details for wallet_id: {wallet_id}")
         get_wallet_query = f""" SELECT * FROM wallets WHERE wallet_id = %(wallet_id)s;"""
-        wallet_data = db_conn.execute_query(get_wallet_query, values={"wallet_id":wallet_id})
+        wallet_data = db_conn.fetch_one(get_wallet_query, values={"wallet_id":wallet_id})
         return wallet_data
     
     def create(self, db_conn:Database, wallet:Wallet):
@@ -47,6 +50,9 @@ class WalletRepository(Repository):
 """
         db_conn.execute_query(update_wallet_query, values=wallet_model_dump)
         return
+
+    def update_part(self):
+        pass
 
     def delete(self, db_conn:Database, wallet_id:UUID):
         app_logger.info(f"Deleting wallet with wallet_id: {wallet_id}")
