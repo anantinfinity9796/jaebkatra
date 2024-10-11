@@ -25,18 +25,18 @@ class TransactionService:
         return 
         
 
-    def list_transactions(self, db_conn:Database):
-        transactions_list = self.transaction_repo.get_all(db_conn)
+    def list_transactions(self, db_pool):
+        transactions_list = self.transaction_repo.get_all(db_pool)
         return transactions_list
     
-    def get_transaction(self, db_conn:Database, transaction_id:UUID):
-        transaction_data = self.transaction_repo.get_one(db_conn, transaction_id)
+    def get_transaction(self, db_pool, transaction_id:UUID):
+        transaction_data = self.transaction_repo.get_one(db_pool, transaction_id)
         return transaction_data
     
-    def create_transaction(self, db_conn:Database, transaction:Transaction):
-        self.transaction_repo.create(db_conn, transaction)
+    def create_transaction(self, db_pool, transaction:Transaction):
+        self.transaction_repo.create(db_pool, transaction)
         return
     
-    def delete_transaction(self, db_conn:Database, transaction_id:UUID):
-        self.transaction_repo.delete(db_conn, transaction_id)
+    def delete_transaction(self, db_pool, transaction_id:UUID):
+        self.transaction_repo.delete(db_pool, transaction_id)
         return

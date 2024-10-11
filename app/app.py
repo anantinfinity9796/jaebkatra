@@ -1,8 +1,11 @@
 # app.py
 
+import os
 import logging
 from fastapi import FastAPI
+from psycopg.rows import dict_row
 from fastapi.middleware.cors import CORSMiddleware
+
 
 from .routers import (users,
                       wallets,
@@ -11,6 +14,7 @@ from .routers import (users,
 
 from util.util import initialize_logger
 from .database.database import Database
+from psycopg_pool import ConnectionPool
 
 # initialize the logger
 initialize_logger()

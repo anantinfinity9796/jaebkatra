@@ -20,31 +20,31 @@ router = APIRouter(
 
 # declare dependencies before hand for a cleaner code
 UsersService = Annotated[UserService, Depends(UserService)]
-DbConn =  Annotated[Database, Depends(get_database_connection)]
+DbPool =  Annotated[Any, Depends(get_database_connection)]
 
                      
 @router.get("/", status_code=status.HTTP_200_OK)
-def list_users(user_service: UsersService, db_conn: DbConn) -> list:
+def list_users(user_service: UsersService, db_pool: DbPool) -> list:
     try:
-        users_list = user_service.list_users(db_conn)
+        users_list = user_service.list_users(db_pool)
         return users_list
     except Exception as e:
         app_logger.error("failed to get user list", exc_info=e)
 
 
 @router.get("/{user_id}", status_code=status.HTTP_200_OK)
-def get_user_details(user_id:UUID, user_service: UsersService, db_conn: DbConn) -> dict:
+def get_user_details(user_id:UUID, user_service: UsersService, db_pool: DbPool) -> dict:
     try:
-        user_data = user_service.get_user(db_conn, user_id)
+        user_data = user_service.get_user(db_pool, user_id)
         return user_data
     except Exception as e:
         app_logger.error(f"failed to fetch user details for user_id: {user_id}", exc_info=e)
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
-def create_user(user: User, user_service: UsersService, db_conn: DbConn):
+def create_user(user: User, user_service: UsersService, db_pool: DbPool):
     try:
-        user_service.create_user(db_conn, user)
+        user_service.create_user(db_pool, user)
     except Exception as e:
         app_logger.error(f"failed to create user: {user.name}", exc_info=e)
     return
@@ -53,9 +53,9 @@ def create_user(user: User, user_service: UsersService, db_conn: DbConn):
 # def modify_user(payload:dict)
 
 @router.delete("/{user_id}", status_code=status.HTTP_200_OK)
-def delete_user(user_id:UUID, user_service: UsersService, db_conn: DbConn):
+def delete_user(user_id:UUID, user_service: UsersService, db_pool: DbPool):
     try:
-        user_service.delete_user(db_conn, user_id)
+        user_service.delete_user(db_pool, user_id)
     except Exception as e:
         app_logger.error(f"failed to delete user: {user_id}", exc_info=e)
     return 
