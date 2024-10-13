@@ -55,6 +55,12 @@ class WalletService:
         return
     
     def delete_wallet(self, db:Database, wallet_id:UUID):
-        with db.pool.connection() as db_conn:
-            self.wallet_repo.delete(db_conn, wallet_id)
+        try:
+            with db.pool.connection() as db_conn:
+                wallet = self.wallet_repo.get_one(db_conn, wallet_id)
+                self.user_repo.delete_wallet(db_conn, user_id=wallet.get('user_id'), wallet_id=wallet_id)
+                self.wallet_repo.delete(db_conn, wallet_id)
+        except Exception as e:
+            app_logger.error(f"error deleting the wallet: {wallet_id}", exc_info=e)
+            raise
         return

@@ -90,3 +90,16 @@ class UserRepository(Repository):
         
         db_conn.execute(append_to_family_members_query, {"user_id":user_id, "family_member_id":family_member_id})
         return
+    
+    def delete_wallet(self, db_conn:Connection, user_id:UUID, wallet_id:UUID):
+        app_logger.info(f"removing wallet: {wallet_id} from wallet list for user: {user_id}")
+        delete_from_wallet_list_query = """
+            UPDATE users
+            set wallets = ARRAY_REMOVE(wallets, %(wallet_id)s)
+            WHERE user_id = %(user_id)s;
+"""
+        try:
+            db_conn.execute(delete_from_wallet_list_query, {"user_id":user_id, "wallet_id":wallet_id})
+        except Exception as e:
+            app_logger.error(f"failed to remove wallet: {wallet_id} from wallet list of user: {user_id}")
+            raise
