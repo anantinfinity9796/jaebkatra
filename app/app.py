@@ -13,23 +13,15 @@ from .routers import (users,
                       transactions)
 
 from util.util import initialize_logger
-from .database.database import Database
-from psycopg_pool import ConnectionPool
 
 # initialize the logger
 initialize_logger()
 
-# initialize a database connection pool for the whole lifespan
-# def init_database_conn(app: FastAPI):
-#     db_conn = Database()
-#     db_conn.pool_open()
-#     yield
-#     db_conn.pool_close()
-
 app_logger = logging.getLogger("app")
 
+
 # initialize the app
-# app = FastAPI(lifespan=init_database_conn)
+# app = FastAPI(lifespan=db_pool_lifespan)
 app = FastAPI()
 
 # origins = [
@@ -50,6 +42,7 @@ app.include_router(users.router)
 app.include_router(wallets.router)
 app.include_router(budgets.router)
 app.include_router(transactions.router)
+
 # Homepage
 @app.get("/")
 def root():

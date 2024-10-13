@@ -20,26 +20,32 @@ class BudgetService:
         self.wallet_repo = wallet_repo
         return 
 
-    def list_budgets(self, db_pool):
-        budgets_list = self.budget_repo.get_all(db_pool)
+    def list_budgets(self, db:Database):
+        with db.pool.connection() as db_conn:
+            budgets_list = self.budget_repo.get_all(db_conn)
         return budgets_list
     
-    def get_budget(self, db_pool, budget_id:UUID):
-        budget_data = self.budget_repo.get_one(db_pool, budget_id)
+    def get_budget(self, db:Database, budget_id:UUID):
+        with db.pool.connection() as db_conn:
+            budget_data = self.budget_repo.get_one(db_conn, budget_id)
         return budget_data
     
-    def create_budget(self, db_pool, budget:Budget):
-        self.budget_repo.create(db_pool, budget)
+    def create_budget(self, db:Database, budget:Budget):
+        with db.pool.connection() as db_conn:
+            self.budget_repo.create(db_conn, budget)
         return
     
-    def update_budget(self, db_pool, budget:Budget):
-        self.budget_repo.update(db_pool, budget)
+    def update_budget(self, db:Database, budget:Budget):
+        with db.pool.connection() as db_conn:
+            self.budget_repo.update(db_conn, budget)
         return
     
-    def update_part_budget(self, db_pool, budget_id:UUID, update_dict:dict):
-        self.budget_repo.update_part(db_pool, budget_id, update_dict)
+    def update_part_budget(self, db:Database, budget_id:UUID, update_dict:dict):
+        with db.pool.connection() as db_conn:
+            self.budget_repo.update_part(db_conn, budget_id, update_dict)
         return
     
-    def delete_budget(self, db_pool, budget_id:UUID):
-        self.budget_repo.delete(db_pool, budget_id)
+    def delete_budget(self, db:Database, budget_id:UUID):
+        with db.pool.connection() as db_conn:
+            self.budget_repo.delete(db_conn, budget_id)
         return
