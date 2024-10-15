@@ -39,6 +39,12 @@ class TransactionRepository(Repository):
 """     
         db_conn.execute(insert_transaction_table_query, transaction_model_dump)
         return
+
+    def update(self):
+        raise NotImplementedError
+    
+    def update_part(self):
+        raise NotImplementedError
         
     
     def delete(self, db_conn:Connection, transaction_id:UUID):

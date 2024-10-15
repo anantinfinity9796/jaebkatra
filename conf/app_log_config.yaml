@@ -13,7 +13,7 @@ handlers:
     backupCount: 5
   console:
     class: logging.StreamHandler
-    level: DEBUG
+    level: INFO
     formatter: simple
     stream: ext://sys.stdout
 loggers:
@@ -25,6 +25,6 @@ loggers:
     level: INFO
     handlers: [app_handler]
     propagate: False
-root:
-  level: DEBUG
-  handlers: [app_handler]
+  root:
+    level: INFO
+    handlers: [console]

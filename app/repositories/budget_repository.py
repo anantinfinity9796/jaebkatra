@@ -51,6 +51,9 @@ class BudgetRepository(Repository):
 """
         db_conn.execute(update_budget_query, budget_model_dump)
         return
+
+    def update_part(self):
+        raise NotImplementedError
     
     def delete(self, db_conn:Connection, budget_id:UUID):
         app_logger.info(f"Deleting budget with budget_id: {budget_id}")
