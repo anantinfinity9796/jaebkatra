@@ -2,10 +2,11 @@
 
 import logging
 from uuid import UUID
+from psycopg import Connection
 from typing import Annotated, Any
 from fastapi import APIRouter, status, Depends, HTTPException
 
-from ..database.database import Database
+from ..database.database import yield_pooled_connection
 from ..models.budget import Budget
 from ..services.budget_service import BudgetService
 
@@ -19,13 +20,14 @@ router = APIRouter(
 
 
 BudgetsService = Annotated[BudgetService, Depends(BudgetService)]
-Db = Annotated[Database, Depends(Database)]
+# Db = Annotated[Database, Depends(Database)]
+DbConn =  Annotated[Connection, Depends(yield_pooled_connection)]
 
 
 @router.get("/", status_code=status.HTTP_200_OK, response_model=list[Budget])
-def list_budgets(budget_service:BudgetsService, db:Db) -> Any:
+def list_budgets(budget_service:BudgetsService, db_conn:DbConn) -> Any:
     try:
-        budgets_list =  budget_service.list_budgets(db)
+        budgets_list =  budget_service.list_budgets(db_conn)
         return budgets_list
     except Exception as e:
         app_logger.error(f"unable to list budgets", exc_info=e)
@@ -33,9 +35,9 @@ def list_budgets(budget_service:BudgetsService, db:Db) -> Any:
 
 
 @router.get("/{budget_id}", status_code=status.HTTP_200_OK, response_model=Budget)
-def get_budget_details(budget_id:UUID, budget_service: BudgetsService, db:Db) -> Any:
+def get_budget_details(budget_id:UUID, budget_service: BudgetsService, db_conn:DbConn) -> Any:
     try:
-        budget_data = budget_service.get_budget(db, budget_id)
+        budget_data = budget_service.get_budget(db_conn, budget_id)
         if budget_data is None:
             raise HTTPException(status_code=404, detail=f"budget with budget_id: {budget_id} not found")
         return budget_data
@@ -44,9 +46,9 @@ def get_budget_details(budget_id:UUID, budget_service: BudgetsService, db:Db) ->
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
-def create_budget(budget:Budget, budget_service: BudgetsService, db:Db):
+def create_budget(budget:Budget, budget_service: BudgetsService, db_conn:DbConn):
     try:
-        budget_service.create_budget(db, budget)
+        budget_service.create_budget(db_conn, budget)
         app_logger.info(f"budget with budget_id: {budget.budget_id} in wallet: {budget.wallet_id} for user: {budget.user_id} has been created")
     except Exception as e:
         app_logger.error(f"failed to create budget for user_id: {budget.user_id}", exc_info=e)
@@ -55,8 +57,8 @@ def create_budget(budget:Budget, budget_service: BudgetsService, db:Db):
 # def modify_user(payload:dict)
 
 @router.delete("/{budget_id}", status_code=status.HTTP_200_OK)
-def delete_budget(budget_id:UUID, budget_service: BudgetsService, db:Db):
+def delete_budget(budget_id:UUID, budget_service: BudgetsService, db_conn:DbConn):
     try:
-        budget_service.delete_budget(db, budget_id)
+        budget_service.delete_budget(db_conn, budget_id)
     except Exception as e:
         app_logger.error(f"failed to delete budget: {budget_id}", exc_info=e)

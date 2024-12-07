@@ -3,12 +3,13 @@
 
 import logging
 from uuid import UUID
+from psycopg import Connection
 from typing import Annotated, Any
 from fastapi import APIRouter, status, Depends
 
 from ..models.transaction import Transaction
 from ..services.transaction_service import TransactionService
-from ..database.database import Database
+from ..database.database import yield_pooled_connection
 
 router = APIRouter(
     prefix="/transactions",
@@ -21,30 +22,31 @@ router = APIRouter(
 app_logger = logging.getLogger("app")
 
 TransactionsService = Annotated[TransactionService, Depends(TransactionService)]
-Db =  Annotated[Any, Depends(Database)]
+# Db =  Annotated[Any, Depends(Database)]
+DbConn =  Annotated[Connection, Depends(yield_pooled_connection)]
 
 @router.get("/", status_code=status.HTTP_200_OK)
-def list_transactions(db:Db, transaction_service: TransactionsService) -> list:
+def list_transactions(db_conn:DbConn, transaction_service: TransactionsService) -> list:
     try:
-        transactions_list = transaction_service.list_transactions(db)
+        transactions_list = transaction_service.list_transactions(db_conn)
         return transactions_list
     except Exception as e:
         app_logger.error("failed to get transactions list", exc_info=e)
 
 
 @router.get("/{transaction_id}", status_code=status.HTTP_200_OK)
-def get_transaction_details(transaction_id:UUID, db:Db, transaction_service: TransactionsService) -> dict:
+def get_transaction_details(transaction_id:UUID, db_conn:DbConn, transaction_service: TransactionsService) -> dict:
     try:
-        transaction_data = transaction_service.get_transaction(db, transaction_id)
+        transaction_data = transaction_service.get_transaction(db_conn, transaction_id)
         return transaction_data
     except Exception as e:
         app_logger.error(f"failed to get transaction details for transaction_id: {transaction_id}", exc_info=e)
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
-def create_transaction(transaction:Transaction, db:Db, transaction_service: TransactionsService):
+def create_transaction(transaction:Transaction, db_conn:DbConn, transaction_service: TransactionsService):
     try:
-        transaction_service.create_transaction(db, transaction)
+        transaction_service.create_transaction(db_conn, transaction)
     except Exception as e:
         app_logger.error(f"failed to create transaction for user_id: {transaction.user_id}", exc_info=e)
 

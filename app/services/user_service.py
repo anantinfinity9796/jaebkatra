@@ -17,42 +17,32 @@ class UserService:
         self.user_repo = user_repo
         return
     
-    def list_users(self, db:Database):
-        with db.pool.connection() as db_conn:      
-            users_list = self.user_repo.get_all(db_conn)
+    def list_users(self, db_conn:Database):
+        with db_conn.cursor() as cur:
+            users_list = self.user_repo.get_all(cur)
         return users_list
     
-    def get_user(self, db:Database, user_id:UUID):
-        with db.pool.connection() as db_conn:
-            user_data = self.user_repo.get_one(db_conn, user_id)
+    def get_user(self, db_conn:Database, user_id:UUID):
+        with db_conn.cursor() as cur:
+            user_data = self.user_repo.get_one(cur, user_id)
         return user_data
     
-    def create_user(self, db:Database, user:User):
-        with db.pool.connection() as db_conn:
-            self.user_repo.create(db_conn, user)
+    def create_user(self, db_conn:Database, user:User):
+        with db_conn.cursor() as cur:
+            self.user_repo.create(cur, user)
         return
     
-    def update_user(self, db:Database, user:User):
-        with db.pool.connection() as db_conn:
-            self.user_repo.update(db_conn, user)
+    def update_user(self, db_conn:Database, user:User):
+        with db_conn.cursor() as cur:
+            self.user_repo.update(cur, user)
         return
     
-    def update_part_user(self, db:Database, user_id:UUID, update_dict:dict):
-        with db.pool.connection() as db_conn:
-            self.user_repo.update_part(db_conn, user_id, update_dict)
+    def update_part_user(self, db_conn:Database, user_id:UUID, update_dict:dict):
+        with db_conn.cursor() as cur:
+            self.user_repo.update_part(cur, user_id, update_dict)
         return
     
-    def delete_user(self, db:Database, user_id:UUID):
-        with db.pool.connection() as db_conn:
-            self.user_repo.delete(db_conn, user_id)
-        return
-    
-    def update_wallets(self, db:Database, user_id:UUID, wallet_id:UUID):
-        with db.pool.connection() as db_conn:
-            self.user_repo.append_to_wallets(db_conn, user_id, wallet_id)
-        return
-
-    def update_family_members(self, db:Database, user_id:UUID, family_member_id:UUID):
-        with db.pool.connection() as db_conn:
-            self.user_repo.append_to_family_members(db_conn, user_id, family_member_id)
+    def delete_user(self, db_conn:Database, user_id:UUID):
+        with db_conn.cursor() as cur:
+            self.user_repo.delete(cur, user_id)
         return

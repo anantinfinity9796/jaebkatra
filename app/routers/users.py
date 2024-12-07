@@ -3,9 +3,10 @@
 import logging
 from uuid import UUID
 from typing import Annotated, Any
+from psycopg import Connection
 from fastapi import APIRouter, status, Depends, HTTPException
 
-from ..database.database import Database
+from ..database.database import Database, yield_pooled_connection
 from ..models.user import User
 from ..services.user_service import UserService
 
@@ -19,13 +20,14 @@ router = APIRouter(
 
 # declare dependencies before hand for a cleaner code
 UsersService = Annotated[UserService, Depends(UserService)]
-Db =  Annotated[Database, Depends(Database)]
+# Db =  Annotated[Database, Depends(Database)]
+DbConn =  Annotated[Connection, Depends(yield_pooled_connection)]
 
 
 @router.get("/", status_code=status.HTTP_200_OK, response_model=list[User])
-def list_users(user_service:UsersService, db:Db) -> Any:
+def list_users(user_service:UsersService, db_conn:DbConn) -> Any:
     try:
-        users_list = user_service.list_users(db)
+        users_list = user_service.list_users(db_conn)
         return users_list
     except Exception as e:
         app_logger.error(f"not able to get the users list", exc_info=e)
@@ -33,17 +35,17 @@ def list_users(user_service:UsersService, db:Db) -> Any:
 
 
 @router.get("/{user_id}", status_code=status.HTTP_200_OK, response_model=User)
-def get_user_details(user_id:UUID, user_service:UsersService, db:Db) -> Any:
-    user_data = user_service.get_user(db, user_id)
+def get_user_details(user_id:UUID, user_service:UsersService, db_conn:DbConn) -> Any:
+    user_data = user_service.get_user(db_conn, user_id)
     if user_data is None:
         raise HTTPException(status_code=404, details=f"user with user_id: {user_id} is not found")
     return user_data
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
-def create_user(user: User, user_service:UsersService, db:Db):
+def create_user(user: User, user_service:UsersService, db_conn:DbConn):
     try:
-        user_service.create_user(db, user)
+        user_service.create_user(db_conn, user)
     except Exception as e:
         app_logger.error(f"failed to create user: {user.name}", exc_info=e)
 
@@ -51,8 +53,8 @@ def create_user(user: User, user_service:UsersService, db:Db):
 # def modify_user(payload:dict)
 
 @router.delete("/{user_id}", status_code=status.HTTP_200_OK)
-def delete_user(user_id:UUID, user_service:UsersService, db:Db):
+def delete_user(user_id:UUID, user_service:UsersService, db_conn:DbConn):
     try:
-        user_service.delete_user(db, user_id)
+        user_service.delete_user(db_conn, user_id)
     except Exception as e:
         app_logger.error(f"failed to delete user: {user_id}", exc_info=e)

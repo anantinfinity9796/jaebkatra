@@ -25,22 +25,22 @@ class TransactionService:
         return 
         
 
-    def list_transactions(self, db:Database):
-        with db.pool.connection() as db_conn:
+    def list_transactions(self, db_conn:Database):
+        with db_conn.cursor() as cur:
             transactions_list = self.transaction_repo.get_all(db_conn)
         return transactions_list
     
-    def get_transaction(self, db:Database, transaction_id:UUID):
-        with db.pool.connection() as db_conn:
+    def get_transaction(self, db_conn:Database, transaction_id:UUID):
+        with db_conn.cursor() as cur:
             transaction_data = self.transaction_repo.get_one(db_conn, transaction_id)
         return transaction_data
     
-    def create_transaction(self, db:Database, transaction:Transaction):
-        with db.pool.connection() as db_conn:
+    def create_transaction(self, db_conn:Database, transaction:Transaction):
+        with db_conn.cursor() as cur:
             self.transaction_repo.create(db_conn, transaction)
         return
     
-    def delete_transaction(self, db:Database, transaction_id:UUID):
-        with db.pool.connection() as db_conn:
+    def delete_transaction(self, db_conn:Database, transaction_id:UUID):
+        with db_conn.cursor() as cur:
             self.transaction_repo.delete(db_conn, transaction_id)
         return
